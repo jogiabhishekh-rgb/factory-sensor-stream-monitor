@@ -77,6 +77,16 @@ def rolling_extrema(readings, window_size):
     return max_values, min_values
 
 
+def find_out_of_limit_readings(readings, low_limit, high_limit):
+    flagged = []
+    reading_number = 1
+    for value in readings:
+        if value < low_limit or value > high_limit:
+            flagged.append((reading_number, value))
+        reading_number += 1
+    return flagged
+
+
 def main():
     parser = argparse.ArgumentParser(description="Factory sensor Matplotlib dashboard")
     parser.add_argument("file", nargs="?", default="stream.txt")
@@ -121,9 +131,12 @@ def main():
 
     raw_ax = fig.add_axes((0.07, 0.61, 0.63, 0.28))
     rolling_ax = fig.add_axes((0.07, 0.22, 0.63, 0.28))
-    status_ax = fig.add_axes((0.74, 0.24, 0.21, 0.64))
+    status_ax = fig.add_axes((0.74, 0.65, 0.21, 0.23))
+    faults_ax = fig.add_axes((0.74, 0.22, 0.21, 0.39))
     status_ax.set_facecolor("#172033")
     status_ax.axis("off")
+    faults_ax.set_facecolor("#172033")
+    faults_ax.axis("off")
 
     k_ax = fig.add_axes((0.14, 0.14, 0.54, 0.025))
     low_ax = fig.add_axes((0.14, 0.09, 0.54, 0.025))
@@ -210,38 +223,81 @@ def main():
                       loc="upper right", framealpha=0.95)
 
     status_text = {
-        "title": status_ax.text(0.07, 0.94, "At a glance", fontsize=15,
+        "title": status_ax.text(0.07, 0.88, "Monitor summary", fontsize=12,
                                 color="#f8fafc", fontweight="bold",
                                 transform=status_ax.transAxes),
-        "source": status_ax.text(0.07, 0.87, f"Data file: {source.name}",
-                                 fontsize=9, color="#cbd5e1",
+        "source": status_ax.text(0.07, 0.72, f"Data file: {source.name}",
+                                 fontsize=8.5, color="#cbd5e1",
                                  transform=status_ax.transAxes),
-        "readings": status_ax.text(0.07, 0.77, f"{count} readings",
-                                   fontsize=13, color="#7dd3fc",
+        "readings": status_ax.text(0.07, 0.55, f"Readings: {count}",
+                                   fontsize=9, color="#7dd3fc",
                                    fontweight="bold", transform=status_ax.transAxes),
-        "windows": status_ax.text(0.07, 0.71, "", fontsize=10,
+        "windows": status_ax.text(0.07, 0.40, "", fontsize=8.5,
                                   color="#e2e8f0", transform=status_ax.transAxes),
-        "alerts": status_ax.text(0.07, 0.61, "", fontsize=11,
+        "alerts": status_ax.text(0.07, 0.25, "", fontsize=8.5,
                                  fontweight="bold", transform=status_ax.transAxes),
-        "latest_title": status_ax.text(0.07, 0.51, "Most recent window",
-                                       fontsize=11, color="#f8fafc",
-                                       fontweight="bold", transform=status_ax.transAxes),
-        "maximum": status_ax.text(0.07, 0.44, "", fontsize=10,
-                                  color="#e2e8f0", transform=status_ax.transAxes),
-        "minimum": status_ax.text(0.07, 0.38, "", fontsize=10,
-                                  color="#e2e8f0", transform=status_ax.transAxes),
-        "explanation_title": status_ax.text(0.07, 0.34, "What this means",
-                                            fontsize=10, color="#f8fafc",
-                                            fontweight="bold", transform=status_ax.transAxes),
-        "explanation": status_ax.text(
-            0.07, 0.23,
-            "A window is flagged if its highest\nvalue is above the maximum, or its\nlowest value is below the minimum.",
-            fontsize=8.5, color="#cbd5e1", linespacing=1.5, va="top",
-            transform=status_ax.transAxes,
-        ),
-        "state": status_ax.text(0.07, 0.08, "", fontsize=13,
+        "state": status_ax.text(0.07, 0.09, "", fontsize=9,
                                 fontweight="bold", transform=status_ax.transAxes),
     }
+
+    faults_ax.text(0.07, 0.92, "Suspected sensor faults", fontsize=10,
+                   color="#f8fafc", fontweight="bold", transform=faults_ax.transAxes)
+    faults_ax.text(0.07, 0.81, "Out-of-limit readings (not confirmed damage)",
+                   fontsize=7.5, color="#cbd5e1", transform=faults_ax.transAxes)
+    faults_ax.text(0.08, 0.71, f"{'Reading #':>10} {'Value':>10}",
+                   fontsize=8, color="#94a3b8", fontweight="bold",
+                   family="monospace", transform=faults_ax.transAxes)
+    fault_rows_text = faults_ax.text(
+        0.08, 0.65, "", fontsize=8, color="#f8fafc",
+        family="monospace", linespacing=1.35, va="top",
+        transform=faults_ax.transAxes,
+    )
+    fault_scroll_text = faults_ax.text(
+        0.07, 0.05, "", fontsize=7.5, color="#94a3b8",
+        transform=faults_ax.transAxes,
+    )
+    fault_records = []
+    fault_scroll_offset = 0
+    visible_fault_rows = 8
+
+    def refresh_fault_column():
+        nonlocal fault_scroll_offset
+        fault_count = item_count(fault_records)
+        last_offset = greater_of(0, fault_count - visible_fault_rows)
+        if fault_scroll_offset > last_offset:
+            fault_scroll_offset = last_offset
+        if fault_scroll_offset < 0:
+            fault_scroll_offset = 0
+
+        if fault_count == 0:
+            fault_rows_text.set_text("No readings outside limits.")
+            fault_scroll_text.set_text("Adjust limits to check for outliers.")
+            return
+
+        rows = ""
+        row_index = fault_scroll_offset
+        last_row = lesser_of(fault_count, fault_scroll_offset + visible_fault_rows)
+        while row_index < last_row:
+            reading_number, value = fault_records[row_index]
+            rows += f"{reading_number:>10} {value:>10}\n"
+            row_index += 1
+        fault_rows_text.set_text(rows)
+        fault_scroll_text.set_text(
+            f"Showing {fault_scroll_offset + 1}-{last_row} of {fault_count}. Scroll to browse."
+        )
+
+    def scroll_fault_column(event):
+        nonlocal fault_scroll_offset
+        if event.inaxes is not faults_ax:
+            return
+        if event.step > 0:
+            fault_scroll_offset -= 1
+        elif event.step < 0:
+            fault_scroll_offset += 1
+        else:
+            return
+        refresh_fault_column()
+        fig.canvas.draw_idle()
 
     def update(_=None):
         window = parse_integer(f"{k_slider.val:.0f}")
@@ -262,6 +318,10 @@ def main():
                 alert_count += 1
             index += 1
 
+        fault_records.clear()
+        fault_records.extend(find_out_of_limit_readings(readings, low, high))
+        refresh_fault_column()
+
         raw_high_line.set_ydata([high, high])
         raw_low_line.set_ydata([low, low])
         rolling_max_line.set_data(centers, max_values)
@@ -275,11 +335,9 @@ def main():
         status_text["windows"].set_text(
             f"{window_count} complete windows checked"
         )
-        status_text["alerts"].set_text(f"{alert_count} windows outside limits")
+        status_text["alerts"].set_text(f"Out-of-limit windows: {alert_count}")
         status_text["alerts"].set_color("#fb7185" if alert_count else "#34d399")
-        status_text["maximum"].set_text(f"Highest value: {latest_max}")
-        status_text["minimum"].set_text(f"Lowest value: {latest_min}")
-        status_text["state"].set_text("CHECK NEEDED" if latest_alert else "ALL CLEAR")
+        status_text["state"].set_text("Latest window: CHECK" if latest_alert else "Latest window: CLEAR")
         status_text["state"].set_color("#fb7185" if latest_alert else "#34d399")
 
         fig.canvas.draw_idle()
@@ -293,6 +351,7 @@ def main():
     low_slider.on_changed(update)
     high_slider.on_changed(update)
     reset_button.on_clicked(reset)
+    fig.canvas.mpl_connect("scroll_event", scroll_fault_column)
     update()
 
     if args.save:
