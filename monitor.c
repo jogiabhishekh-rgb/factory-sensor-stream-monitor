@@ -87,13 +87,14 @@ int main(int argc, char **argv) {
     }
 
     /* Table: first 10 and last 5 windows (or all if small) */
-    printf("\n%-8s %-14s %-6s %-6s %s\n", "Window", "Range", "Max", "Min", "Status");
+    printf("\n%-8s %-15s %12s %12s %-6s\n",
+           "Window", "Reading range", "Maximum", "Minimum", "Status");
     for (int s = 0; s < W; s++) {
         if (W > 20 && s == 10) { printf("  ...\n"); s = W - 6; continue; }
         int bad = (MX[s] > high || MN[s] < low);
         char rng[32];
         snprintf(rng, sizeof rng, "[%d..%d]", s, s + K - 1);
-        printf("%-8d %-14s %-6d %-6d %s\n", s + 1, rng,
+        printf("%-8d %-15s %12d %12d %-6s\n", s + 1, rng,
                MX[s], MN[s], bad ? "ALERT" : "OK");
     }
 
