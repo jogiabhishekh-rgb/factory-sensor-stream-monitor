@@ -1,5 +1,6 @@
 import argparse
 import re
+from collections import deque
 from pathlib import Path
 
 import matplotlib.pyplot as plt
@@ -36,47 +37,6 @@ def lesser_of(left, right):
     return left if left < right else right
 
 
-class IndexDeque:
-    def __init__(self, capacity):
-        if capacity < 1:
-            raise ValueError("capacity must be at least 1")
-        self._items = [0] * capacity
-        self._capacity = capacity
-        self._head = 0
-        self._size = 0
-
-    def is_empty(self):
-        return self._size == 0
-
-    def front(self):
-        if self.is_empty():
-            raise IndexError("front from empty deque")
-        return self._items[self._head]
-
-    def back(self):
-        if self.is_empty():
-            raise IndexError("back from empty deque")
-        return self._items[(self._head + self._size - 1) % self._capacity]
-
-    def push_back(self, value):
-        if self._size == self._capacity:
-            raise OverflowError("deque is full")
-        index = (self._head + self._size) % self._capacity
-        self._items[index] = value
-        self._size += 1
-
-    def pop_back(self):
-        if self.is_empty():
-            raise IndexError("pop from empty deque")
-        self._size -= 1
-
-    def pop_front(self):
-        if self.is_empty():
-            raise IndexError("pop from empty deque")
-        self._head = (self._head + 1) % self._capacity
-        self._size -= 1
-
-
 def read_readings(path):
     text = Path(path).read_text(encoding="utf-8")
     readings = []
@@ -90,27 +50,27 @@ def read_readings(path):
 def rolling_extrema(readings, window_size):
     max_values = []
     min_values = []
-    max_queue = IndexDeque(window_size + 1)
-    min_queue = IndexDeque(window_size + 1)
+    max_queue = deque()
+    min_queue = deque()
 
     index = 0
     for value in readings:
-        while not max_queue.is_empty() and readings[max_queue.back()] <= value:
-            max_queue.pop_back()
-        max_queue.push_back(index)
+        while max_queue and readings[max_queue[-1]] <= value:
+            max_queue.pop()
+        max_queue.append(index)
 
-        while not min_queue.is_empty() and readings[min_queue.back()] >= value:
-            min_queue.pop_back()
-        min_queue.push_back(index)
+        while min_queue and readings[min_queue[-1]] >= value:
+            min_queue.pop()
+        min_queue.append(index)
 
-        if max_queue.front() <= index - window_size:
-            max_queue.pop_front()
-        if min_queue.front() <= index - window_size:
-            min_queue.pop_front()
+        if max_queue[0] <= index - window_size:
+            max_queue.popleft()
+        if min_queue[0] <= index - window_size:
+            min_queue.popleft()
 
         if index >= window_size - 1:
-            max_values.append(readings[max_queue.front()])
-            min_values.append(readings[min_queue.front()])
+            max_values.append(readings[max_queue[0]])
+            min_values.append(readings[min_queue[0]])
 
         index += 1
 
