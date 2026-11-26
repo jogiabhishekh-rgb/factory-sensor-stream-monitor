@@ -137,10 +137,3 @@ factory-sensor-stream-monitor/
 
 Up to 100,000 integer readings per replay. K is fixed during a replay and 1 ≤ K ≤ n. Live hardware input is not included; replay files and manual input are used instead.
 
-## Team contributions
-
-| Member | Contribution |
-|---|---|
-| <name> | <for example: deque ADT and rolling extrema in monitor.c> |
-| <name> | <for example: alerts, table output and baseline comparison> |
-| <name> | <for example: Python dashboard and README> |
