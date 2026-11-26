@@ -91,7 +91,9 @@ int main(int argc, char **argv) {
     for (int s = 0; s < W; s++) {
         if (W > 20 && s == 10) { printf("  ...\n"); s = W - 6; continue; }
         int bad = (MX[s] > high || MN[s] < low);
-        printf("%-8d [%d..%d]%*s %-6d %-6d %s\n", s + 1, s, s + K - 1, 4, "",
+        char rng[32];
+        snprintf(rng, sizeof rng, "[%d..%d]", s, s + K - 1);
+        printf("%-8d %-14s %-6d %-6d %s\n", s + 1, rng,
                MX[s], MN[s], bad ? "ALERT" : "OK");
     }
 
