@@ -131,10 +131,13 @@ def main():
 
     raw_ax = fig.add_axes((0.07, 0.61, 0.63, 0.28))
     rolling_ax = fig.add_axes((0.07, 0.22, 0.63, 0.28))
-    status_ax = fig.add_axes((0.74, 0.65, 0.21, 0.23))
-    faults_ax = fig.add_axes((0.74, 0.22, 0.21, 0.39))
+    status_ax = fig.add_axes((0.74, 0.72, 0.21, 0.16))
+    sensors_ax = fig.add_axes((0.74, 0.36, 0.21, 0.33))
+    faults_ax = fig.add_axes((0.74, 0.15, 0.21, 0.19))
     status_ax.set_facecolor("#172033")
     status_ax.axis("off")
+    sensors_ax.set_facecolor("#172033")
+    sensors_ax.axis("off")
     faults_ax.set_facecolor("#172033")
     faults_ax.axis("off")
 
@@ -223,42 +226,62 @@ def main():
                       loc="upper right", framealpha=0.95)
 
     status_text = {
-        "title": status_ax.text(0.07, 0.88, "Monitor summary", fontsize=12,
+        "title": status_ax.text(0.07, 0.88, "Monitor summary", fontsize=11,
                                 color="#f8fafc", fontweight="bold",
                                 transform=status_ax.transAxes),
-        "source": status_ax.text(0.07, 0.72, f"Data file: {source.name}",
-                                 fontsize=8.5, color="#cbd5e1",
+        "source": status_ax.text(0.07, 0.68, f"Data: {source.name}",
+                                 fontsize=7.5, color="#cbd5e1",
                                  transform=status_ax.transAxes),
-        "readings": status_ax.text(0.07, 0.55, f"Readings: {count}",
-                                   fontsize=9, color="#7dd3fc",
+        "readings": status_ax.text(0.07, 0.47, f"Readings: {count}",
+                                   fontsize=8.5, color="#7dd3fc",
                                    fontweight="bold", transform=status_ax.transAxes),
-        "windows": status_ax.text(0.07, 0.40, "", fontsize=8.5,
+        "windows": status_ax.text(0.07, 0.28, "", fontsize=7.5,
                                   color="#e2e8f0", transform=status_ax.transAxes),
-        "alerts": status_ax.text(0.07, 0.25, "", fontsize=8.5,
+        "alerts": status_ax.text(0.07, 0.09, "", fontsize=7.5,
                                  fontweight="bold", transform=status_ax.transAxes),
-        "state": status_ax.text(0.07, 0.09, "", fontsize=9,
-                                fontweight="bold", transform=status_ax.transAxes),
     }
 
-    faults_ax.text(0.07, 0.92, "Suspected sensor faults", fontsize=10,
+    sensor_ids = []
+    sensor_number = 1
+    while sensor_number <= 8:
+        sensor_ids.append(f"S{sensor_number}r")
+        sensor_number += 1
+    sensor_rows = ""
+    for sensor_id in sensor_ids:
+        sensor_rows += f"{sensor_id:<10} UNKNOWN\n"
+
+    sensors_ax.text(0.07, 0.92, "Sensor roster", fontsize=10,
+                    color="#f8fafc", fontweight="bold",
+                    transform=sensors_ax.transAxes)
+    sensors_ax.text(0.08, 0.80, f"{'Sensor ID':<10} Status",
+                    fontsize=8, color="#94a3b8", fontweight="bold",
+                    family="monospace", transform=sensors_ax.transAxes)
+    sensors_ax.text(0.08, 0.72, sensor_rows, fontsize=8.5,
+                    color="#e2e8f0", family="monospace", linespacing=1.5,
+                    va="top", transform=sensors_ax.transAxes)
+    sensors_ax.text(0.07, 0.05, "No readings mapped to sensor IDs.",
+                    fontsize=7, color="#94a3b8",
+                    transform=sensors_ax.transAxes)
+
+    faults_ax.text(0.07, 0.92, "Out-of-limit readings", fontsize=9,
                    color="#f8fafc", fontweight="bold", transform=faults_ax.transAxes)
-    faults_ax.text(0.07, 0.81, "Out-of-limit readings (not confirmed damage)",
-                   fontsize=7.5, color="#cbd5e1", transform=faults_ax.transAxes)
-    faults_ax.text(0.08, 0.71, f"{'Reading #':>10} {'Value':>10}",
+    faults_ax.text(0.07, 0.77, "Sensor ID not linked", fontsize=7,
+                   color="#cbd5e1", transform=faults_ax.transAxes)
+    faults_ax.text(0.08, 0.60, f"{'Reading #':>10} {'Value':>10}",
                    fontsize=8, color="#94a3b8", fontweight="bold",
                    family="monospace", transform=faults_ax.transAxes)
     fault_rows_text = faults_ax.text(
-        0.08, 0.65, "", fontsize=8, color="#f8fafc",
+        0.08, 0.52, "", fontsize=8, color="#f8fafc",
         family="monospace", linespacing=1.35, va="top",
         transform=faults_ax.transAxes,
     )
     fault_scroll_text = faults_ax.text(
-        0.07, 0.05, "", fontsize=7.5, color="#94a3b8",
+        0.07, 0.04, "", fontsize=6.5, color="#94a3b8",
         transform=faults_ax.transAxes,
     )
     fault_records = []
     fault_scroll_offset = 0
-    visible_fault_rows = 8
+    visible_fault_rows = 3
 
     def refresh_fault_column():
         nonlocal fault_scroll_offset
@@ -282,9 +305,7 @@ def main():
             rows += f"{reading_number:>10} {value:>10}\n"
             row_index += 1
         fault_rows_text.set_text(rows)
-        fault_scroll_text.set_text(
-            f"Showing {fault_scroll_offset + 1}-{last_row} of {fault_count}. Scroll to browse."
-        )
+        fault_scroll_text.set_text(f"{fault_scroll_offset + 1}-{last_row} of {fault_count}; scroll")
 
     def scroll_fault_column(event):
         nonlocal fault_scroll_offset
@@ -337,9 +358,6 @@ def main():
         )
         status_text["alerts"].set_text(f"Out-of-limit windows: {alert_count}")
         status_text["alerts"].set_color("#fb7185" if alert_count else "#34d399")
-        status_text["state"].set_text("Latest window: CHECK" if latest_alert else "Latest window: CLEAR")
-        status_text["state"].set_color("#fb7185" if latest_alert else "#34d399")
-
         fig.canvas.draw_idle()
 
     def reset(_):
