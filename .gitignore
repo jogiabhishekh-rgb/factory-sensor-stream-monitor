@@ -1,0 +1,4 @@
+monitor
+monitor.exe
+__pycache__/
+tests/large.txt
