@@ -14,7 +14,7 @@ _DIGIT_VALUES = {
 
 def item_count(items):
     count = 0
-    for _item in items:
+    for _ in items:
         count += 1
     return count
 
@@ -152,22 +152,23 @@ def main():
         "font.size": 10,
     })
     fig = plt.figure(figsize=(14, 9), facecolor="#0b1220")
-    fig.canvas.manager.set_window_title("Factory Sensor Stream Monitor")
+    if fig.canvas.manager is not None:
+        fig.canvas.manager.set_window_title("Factory Sensor Stream Monitor")
     fig.text(0.07, 0.955, "Factory Sensor Monitor", fontsize=20, fontweight="bold",
              color="#f9fafb", ha="left")
     fig.text(0.07, 0.925, "Live readings, rolling limits, and clear alert status",
              fontsize=10, color="#94a3b8", ha="left")
 
-    raw_ax = fig.add_axes([0.07, 0.61, 0.63, 0.28])
-    rolling_ax = fig.add_axes([0.07, 0.22, 0.63, 0.28])
-    status_ax = fig.add_axes([0.74, 0.24, 0.21, 0.64])
+    raw_ax = fig.add_axes((0.07, 0.61, 0.63, 0.28))
+    rolling_ax = fig.add_axes((0.07, 0.22, 0.63, 0.28))
+    status_ax = fig.add_axes((0.74, 0.24, 0.21, 0.64))
     status_ax.set_facecolor("#172033")
     status_ax.axis("off")
 
-    k_ax = fig.add_axes([0.14, 0.14, 0.54, 0.025])
-    low_ax = fig.add_axes([0.14, 0.09, 0.54, 0.025])
-    high_ax = fig.add_axes([0.14, 0.04, 0.54, 0.025])
-    reset_ax = fig.add_axes([0.75, 0.05, 0.19, 0.05])
+    k_ax = fig.add_axes((0.14, 0.14, 0.54, 0.025))
+    low_ax = fig.add_axes((0.14, 0.09, 0.54, 0.025))
+    high_ax = fig.add_axes((0.14, 0.04, 0.54, 0.025))
+    reset_ax = fig.add_axes((0.75, 0.05, 0.19, 0.05))
 
     control_color = "#253247"
     k_slider = Slider(k_ax, "Window size", 1, count, valinit=default_window,
