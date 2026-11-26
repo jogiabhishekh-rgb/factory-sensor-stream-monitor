@@ -226,7 +226,7 @@ def main():
                       loc="upper right", framealpha=0.95)
 
     status_text = {
-        "title": status_ax.text(0.07, 0.92, "Monitor summary", fontsize=10,
+        "title": status_ax.text(0.07, 0.88, "Monitor summary", fontsize=11,
                                 color="#f8fafc", fontweight="bold",
                                 transform=status_ax.transAxes),
         "source": status_ax.text(0.07, 0.68, f"Data: {source.name}",
@@ -263,7 +263,7 @@ def main():
                     fontsize=7, color="#94a3b8",
                     transform=sensors_ax.transAxes)
 
-    faults_ax.text(0.07, 0.92, "Out-of-limit readings", fontsize=10,
+    faults_ax.text(0.07, 0.92, "Out-of-limit readings", fontsize=9,
                    color="#f8fafc", fontweight="bold", transform=faults_ax.transAxes)
     faults_ax.text(0.07, 0.77, "Sensor ID not linked", fontsize=7,
                    color="#cbd5e1", transform=faults_ax.transAxes)
