@@ -141,18 +141,21 @@ def main():
     faults_ax.set_facecolor("#172033")
     faults_ax.axis("off")
 
-    k_ax = fig.add_axes((0.14, 0.14, 0.54, 0.025))
-    low_ax = fig.add_axes((0.14, 0.09, 0.54, 0.025))
-    high_ax = fig.add_axes((0.14, 0.04, 0.54, 0.025))
+    k_ax = fig.add_axes((0.14, 0.135, 0.54, 0.035))
+    low_ax = fig.add_axes((0.14, 0.085, 0.54, 0.035))
+    high_ax = fig.add_axes((0.14, 0.035, 0.54, 0.035))
     reset_ax = fig.add_axes((0.75, 0.05, 0.19, 0.05))
 
     control_color = "#253247"
     k_slider = Slider(k_ax, "Window size", 1, count, valinit=default_window,
-                      valstep=1, color="#38bdf8", track_color=control_color)
+                      valstep=1, dragging=True, color="#38bdf8",
+                      track_color=control_color)
     low_slider = Slider(low_ax, "Minimum allowed", axis_min, axis_max,
-                        valinit=default_low, color="#34d399", track_color=control_color)
+                        valinit=default_low, valstep=None, dragging=True,
+                        color="#34d399", track_color=control_color)
     high_slider = Slider(high_ax, "Maximum allowed", axis_min, axis_max,
-                         valinit=default_high, color="#fb7185", track_color=control_color)
+                         valinit=default_high, valstep=None, dragging=True,
+                         color="#fb7185", track_color=control_color)
     reset_button = Button(reset_ax, "Reset settings", color="#253247", hovercolor="#334155")
     reset_button.label.set_color("#f9fafb")
     for slider in (k_slider, low_slider, high_slider):
@@ -226,7 +229,7 @@ def main():
                       loc="upper right", framealpha=0.95)
 
     status_text = {
-        "title": status_ax.text(0.07, 0.88, "Monitor summary", fontsize=11,
+        "title": status_ax.text(0.07, 0.92, "Monitor summary", fontsize=10,
                                 color="#f8fafc", fontweight="bold",
                                 transform=status_ax.transAxes),
         "source": status_ax.text(0.07, 0.68, f"Data: {source.name}",
@@ -263,7 +266,7 @@ def main():
                     fontsize=7, color="#94a3b8",
                     transform=sensors_ax.transAxes)
 
-    faults_ax.text(0.07, 0.92, "Out-of-limit readings", fontsize=9,
+    faults_ax.text(0.07, 0.92, "Out-of-limit readings", fontsize=10,
                    color="#f8fafc", fontweight="bold", transform=faults_ax.transAxes)
     faults_ax.text(0.07, 0.77, "Sensor ID not linked", fontsize=7,
                    color="#cbd5e1", transform=faults_ax.transAxes)
